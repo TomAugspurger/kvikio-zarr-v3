@@ -46,3 +46,10 @@ Task=write Store=local  Compression=none Throughput=130.94 MB/s
 Task=read Store=kvikio Compression=none Throughput=1318.49 MB/s
 Task=read Store=local  Compression=none Throughput=2744.23 MB/s
 ```
+
+## Profiles
+
+```
+nsys profile -t nvtx,cuda --stats=true --force-overwrite=true --output=write-compressed-kvikio ./bench.py write --compress --kvikio
+nsys profile -t nvtx,cuda --stats=true --force-overwrite=true --output=read-compressed-kvikio ./bench.py read --compress --kvikio
+```
