@@ -105,7 +105,6 @@ async def read(compress: bool, use_kvikio: bool):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("action", choices=["read", "write"])
-    parser.add_argument("--concurrent", action=argparse.BooleanOptionalAction)
     parser.add_argument("--compress", action=argparse.BooleanOptionalAction, help="Whether to compress the data")
     parser.add_argument("--kvikio", action=argparse.BooleanOptionalAction, help="Whether to compress the data")
     args = parser.parse_args(None)

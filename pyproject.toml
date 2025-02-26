@@ -15,5 +15,3 @@ zarr = { git = "https://github.com/akshaysubr/zarr-python", rev = "gpu-codecs" }
 
 [tool.uv]
 override-dependencies = [ "zarr @ git+https://github.com/akshaysubr/zarr-python@gpu-codecs" ]
-
-
