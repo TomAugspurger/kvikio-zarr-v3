@@ -20,26 +20,6 @@ ys = [slice(i * CHUNKS[1], (i + 1) * CHUNKS[1]) for i in range(SHAPE[1] // CHUNK
 NBYTES = 8 * math.prod(SHAPE)
 
 
-# async def write(concurrent: bool=True):
-#     store = kvikio.zarr_v3.GDSStore(ROOT)
-#     if store.root.exists():
-#         await store.clear()
-
-#     with zarr.config.enable_gpu():
-#         tasks = []
-#         a = await zarr.api.asynchronous.create_array(store, name="a", shape=SHAPE, chunks=CHUNKS, dtype="f8")
-#         nvtx.mark(message="Benchmark start")
-#         for x in xs:
-#             for y in ys:
-#                 coro = a.setitem((x, y), cp.random.uniform(size=CHUNKS))
-#                 if concurrent:
-#                     tasks.append(coro)
-#                 else:
-#                     await coro
-#         if concurrent:
-#             await asyncio.gather(*tasks)
-
-
 async def write(compress: bool, use_kvikio: bool):
     if use_kvikio:
         store = GDSStore(ROOT)

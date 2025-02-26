@@ -30,3 +30,19 @@ KVIKIO_NTHREADS=64 ./bench.py write --no-compress --no-kvikio
 KVIKIO_NTHREADS=64 ./bench.py read --no-compress --kvikio
 KVIKIO_NTHREADS=64 ./bench.py read --no-compress --no-kvikio
 ```
+
+results (on a DGX of some sort):
+
+```
+# with compression
+Task=write Store=kvikio Compression=zstd Throughput=82.67 MB/s
+Task=write Store=local  Compression=zstd Throughput=85.99 MB/s
+Task=read Store=kvikio Compression=zstd Throughput=169.32 MB/s
+Task=read Store=local  Compression=zstd Throughput=182.90 MB/s
+
+# no compression
+Task=write Store=kvikio Compression=none Throughput=104.56 MB/s
+Task=write Store=local  Compression=none Throughput=130.94 MB/s
+Task=read Store=kvikio Compression=none Throughput=1318.49 MB/s
+Task=read Store=local  Compression=none Throughput=2744.23 MB/s
+```
