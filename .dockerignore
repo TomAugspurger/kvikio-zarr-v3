@@ -1,0 +1,4 @@
+**/*.nsys-rep
+.venv
+*.qdstrm
+**/*/__pycache__

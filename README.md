@@ -40,10 +40,3 @@ uv run bench.py write
 nsys profile -t nvtx,cuda --python-sampling=true --force-overwrite=true --output=write-compressed-kvikio ./bench.py write --compress --kvikio --profiling
 nsys profile -t nvtx,cuda --python-sampling=true --force-overwrite=true --output=read-compressed-kvikio ./bench.py read --compress --kvikio --profiling
 ```
-
-```python
->>> import cupy as cp
->>> from nvidia import nvcomp
->>> codec = nvcomp.Codec(algorithm="Zstd")
->>> data = cp.random.randint(0, 256, size=(4096, 4096))
-```
