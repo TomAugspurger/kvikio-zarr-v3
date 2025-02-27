@@ -19,7 +19,6 @@ uv run bench.py write
 
 ```
 ./bench.py all
-```
 
 ┏━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Task   ┃ Store ┃ Compression ┃ Duration ┃ Effective Throughput (MB/s) ┃
@@ -33,6 +32,7 @@ uv run bench.py write
 │ local  │ none  │ write       │ 13.47    │                      155.70 │
 │ local  │ zstd  │ write       │ 15.54    │                      134.96 │
 └────────┴───────┴─────────────┴──────────┴─────────────────────────────┘
+```
 
 ## Profiles
 
