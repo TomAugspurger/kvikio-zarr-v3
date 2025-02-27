@@ -179,10 +179,11 @@ if __name__ == "__main__":
                 "Effective Throughput (MB/s)",
             )
             for record in records:
-                task, cname, sname, duration, throughput = record
+                task, sname, cname, duration, throughput = record
                 t.add_row(
-                    cname,
+                    task,
                     sname,
+                    cname,
                     task,
                     f"{duration:0.2f}",
                     rich.align.Align(f"{throughput:0.2f}", "right"),
