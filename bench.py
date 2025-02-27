@@ -1,17 +1,21 @@
 #!/usr/bin/env python3
-import math
 import argparse
-import time
 import asyncio
-import zarr.storage
-import zarr.api.asynchronous
+import contextlib
+import math
+import pathlib
+import tempfile
+import time
+
 import cupy as cp
+import kvikio.defaults
 import nvtx
+import zarr.api.asynchronous
+import zarr.storage
+
 from kvikio_zarr_v3 import GDSStore
 
-
-ROOT = "/tmp/data.zarr"
-# SHAPE = (16_384, 16_384)
+ROOT = pathlib.Path(tempfile.gettempdir()) / "data.zarr"
 SHAPE = (24_576, 24_576)  # 4.5 GiB in memory
 CHUNKS = (4096, 4096)  # 128 MiB in memory
 KERNEL = (16, 16)
@@ -36,34 +40,19 @@ async def write(compress: bool, use_kvikio: bool):
     # TODO: various strategies for generating data, some of which are
     # hopefully friendlier to zstd compression.
     base = cp.random.randint(0, 256, size=KERNEL)
-    n_reps = tuple((c // k) * (s // c) for s, c, k in zip(SHAPE, CHUNKS, KERNEL))
+    n_reps = tuple(
+        (c // k) * (s // c) for s, c, k in zip(SHAPE, CHUNKS, KERNEL, strict=False)
+    )
     data = cp.tile(base, n_reps)
-    assert data.shape == SHAPE
+    assert data.shape == SHAPE  # noqa: S101
 
     data = cp.random.uniform(size=SHAPE)
     with zarr.config.enable_gpu(), zarr.config.set({"codec_pipeline.batch_size": 64}):
-        a = await zarr.api.asynchronous.create_array(store, name="a", shape=SHAPE, chunks=CHUNKS, dtype="f8", **kwargs)
+        a = await zarr.api.asynchronous.create_array(
+            store, name="a", shape=SHAPE, chunks=CHUNKS, dtype="f8", **kwargs
+        )
         nvtx.mark(message="Benchmark start")
         await a.setitem(slice(None), data)
-
-
-# async def read(concurrent: bool = True):
-#     store = kvikio.zarr_v3.GDSStore(ROOT)
-
-#     with zarr.config.enable_gpu():
-#         tasks = []
-#         g = await zarr.api.asynchronous.open_group(store=store)
-#         a = await g.get("a")
-#         nvtx.mark(message="Benchmark start")
-#         for x in xs:
-#             for y in ys:
-#                 coro = a.getitem((x, y))
-#                 if concurrent:
-#                     tasks.append(coro)
-#                 else:
-#                     await coro
-#         if concurrent:
-#             await asyncio.gather(*tasks)
 
 
 async def read(compress: bool, use_kvikio: bool):
@@ -76,7 +65,7 @@ async def read(compress: bool, use_kvikio: bool):
         g = await zarr.api.asynchronous.open_group(store=store)
         a = await g.get("a")
         if compress:
-            assert len(a.metadata.codecs) == 2
+            assert len(a.metadata.codecs) == 2  # noqa: S101
 
         nvtx.mark(message="Benchmark start")
         await a.getitem(slice(None))
@@ -85,9 +74,23 @@ async def read(compress: bool, use_kvikio: bool):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("action", choices=["read", "write"])
-    parser.add_argument("--compress", action=argparse.BooleanOptionalAction, help="Whether to compress the data")
-    parser.add_argument("--kvikio", action=argparse.BooleanOptionalAction, help="Whether to compress the data")
+    parser.add_argument(
+        "--compress",
+        action=argparse.BooleanOptionalAction,
+        help="Whether to compress the data",
+    )
+    parser.add_argument(
+        "--kvikio",
+        action=argparse.BooleanOptionalAction,
+        help="Whether to compress the data",
+    )
+    parser.add_argument("--n-threads", type=int, default=0)
     args = parser.parse_args(None)
+
+    if args.n_threads > 0:
+        num_threads = kvikio.defaults.set_num_threads(args.n_threads)
+    else:
+        num_threads = contextlib.nullcontext()
 
     t0 = time.perf_counter()
     if args.action == "write":
@@ -103,7 +106,7 @@ if __name__ == "__main__":
     compression = "zstd" if args.compress else "none"
     task = args.action
 
-    print(f"Task={task} Store={store} Compression={compression} Throughput={throughput:0.2f} MB/s")
-
-    # print(f"Throughput={dask.utils.format_bytes(throughput)}s nbytes={dask.utils.format_bytes(NBYTES)} Duration={t1-t0:0.2f}")
-
+    print(
+        f"Task={task} Store={store} Compression={compression} "
+        f"Throughput={throughput:0.2f} MB/s"
+    )

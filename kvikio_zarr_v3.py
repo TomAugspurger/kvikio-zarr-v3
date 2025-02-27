@@ -6,6 +6,7 @@ import contextlib
 import os
 from pathlib import Path
 
+import kvikio
 import zarr.storage
 from zarr.abc.store import (
     ByteRequest,
@@ -15,8 +16,6 @@ from zarr.abc.store import (
 )
 from zarr.core.buffer import Buffer, BufferPrototype
 from zarr.core.buffer.core import default_buffer_prototype
-
-import kvikio
 
 try:
     import nvtx
@@ -91,7 +90,6 @@ def _put(
             f.write(value.as_array_like(), file_offset=start)
         return None
     else:
-        # view = memoryview(value.as_numpy_array().tobytes())
         buf = value.as_array_like()
         if exclusive:
             if path.exists():
@@ -116,7 +114,6 @@ class GDSStore(zarr.storage.LocalStore):
             prototype = default_buffer_prototype()
         if not self._is_open:
             await self._open()
-        assert isinstance(key, str)
         path = self.root / key
 
         if HAS_NVTX:
@@ -137,7 +134,6 @@ class GDSStore(zarr.storage.LocalStore):
         if not self._is_open:
             await self._open()
         self._check_writable()
-        assert isinstance(key, str)
         if not isinstance(value, Buffer):
             raise TypeError(
                 f"LocalStore.set(): `value` must be a Buffer instance. Got an "
@@ -152,4 +148,3 @@ class GDSStore(zarr.storage.LocalStore):
 
         with annotate(**kwargs):
             await asyncio.to_thread(_put, path, value, start=None, exclusive=exclusive)
-

@@ -1,4 +1,5 @@
 import pathlib
+
 import xarray as xr
 import zarr
 
@@ -16,4 +17,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
