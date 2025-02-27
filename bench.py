@@ -10,17 +10,20 @@ import time
 import cupy as cp
 import kvikio.defaults
 import nvtx
+import rich.align
+import rich.progress
+import rich.table
 import zarr.api.asynchronous
 import zarr.storage
 
 from kvikio_zarr_v3 import GDSStore
 
 ROOT = pathlib.Path(tempfile.gettempdir()) / "data.zarr"
-SHAPE = (24_576, 24_576)  # 4.5 GiB in memory
-CHUNKS = (4096, 4096)  # 128 MiB in memory
-KERNEL = (16, 16)
-xs = [slice(i * CHUNKS[0], (i + 1) * CHUNKS[0]) for i in range(SHAPE[0] // CHUNKS[0])]
-ys = [slice(i * CHUNKS[1], (i + 1) * CHUNKS[1]) for i in range(SHAPE[1] // CHUNKS[1])]
+SHAPE = (10, 32, 640, 1280)
+# SHAPE = (1, 32, 640, 1280)  # ...
+CHUNKS = (1, 32, 640, 1280)  # ...
+KERNEL = (1, 32, 16, 32)
+DTYPE = "f4"
 NBYTES = 8 * math.prod(SHAPE)
 
 
@@ -73,7 +76,7 @@ async def read(compress: bool, use_kvikio: bool):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("action", choices=["read", "write"])
+    parser.add_argument("action", choices=["read", "write", "all"])
     parser.add_argument(
         "--compress",
         action=argparse.BooleanOptionalAction,
@@ -92,21 +95,64 @@ if __name__ == "__main__":
     else:
         num_threads = contextlib.nullcontext()
 
-    t0 = time.perf_counter()
-    if args.action == "write":
-        asyncio.run(write(args.compress, args.kvikio))
-    elif args.action == "read":
-        asyncio.run(read(args.compress, args.kvikio))
+    match args.action:
+        case "read" | "write":
+            f = write if args.action == "write" else read
+            with num_threads:
+                t0 = time.perf_counter()
+                asyncio.run(f(args.compress, args.kvikio))
+                t1 = time.perf_counter()
 
-    t1 = time.perf_counter()
+            duration = t1 - t0
+            throughput = NBYTES / duration / 1e6
+            store = "kvikio" if args.kvikio else "local "
+            compression = "zstd" if args.compress else "none"
+            task = args.action
 
-    duration = t1 - t0
-    throughput = NBYTES / duration / 1e6
-    store = "kvikio" if args.kvikio else "local "
-    compression = "zstd" if args.compress else "none"
-    task = args.action
+            print(
+                f"Task={task} Store={store} Compression={compression} "
+                f"Throughput={throughput:0.2f} MB/s"
+            )
+        case "all":
+            records = []
+            combinations = [
+                (compress, use_kvikio)
+                for compress in [True, False]
+                for use_kvikio in [True, False]
+            ]
+            for compress, use_kvikio in rich.progress.track(combinations):
+                cname = "zstd" if compress else "none"
+                sname = "kvikio" if use_kvikio else "local"
 
-    print(
-        f"Task={task} Store={store} Compression={compression} "
-        f"Throughput={throughput:0.2f} MB/s"
-    )
+                with num_threads:
+                    t0 = time.perf_counter()
+                    asyncio.run(write(compress, use_kvikio))
+                    t1 = time.perf_counter()
+                    asyncio.run(read(compress, use_kvikio))
+                    t2 = time.perf_counter()
+
+                records.append(
+                    (cname, sname, "write", round(t1 - t0, 2), NBYTES / (t1 - t0) / 1e6)
+                )
+
+                records.append(
+                    (cname, sname, "read", round(t2 - t1, 2), NBYTES / (t2 - t1) / 1e6)
+                )
+
+            t = rich.table.Table(
+                "Compression",
+                "Store",
+                "Task",
+                "Duration",
+                "Effective Throughput (MB/s)",
+            )
+            for record in records:
+                cname, sname, task, duration, throughput = record
+                t.add_row(
+                    cname,
+                    sname,
+                    task,
+                    f"{duration:0.2f}",
+                    rich.align.Align(f"{throughput:0.2f}", "right"),
+                )
+            rich.print(t)
