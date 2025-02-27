@@ -97,6 +97,10 @@ async def read(compress: bool, use_kvikio: bool):
         await a.getitem(slice(None))
 
 
+def search_num_threads():
+    ...
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("action", choices=["read", "write", "all"])

@@ -14,8 +14,8 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-# zarr = { git = "https://github.com/akshaysubr/zarr-python", rev = "gpu-codecs" }  # need to push tags here
-zarr = { git = "https://github.com/TomAugspurger/zarr-python", rev = "gpu-codecs" }
+zarr = { git = "https://github.com/akshaysubr/zarr-python", rev = "gpu-codecs" }  # need to push tags here
+# zarr = { git = "https://github.com/TomAugspurger/zarr-python", rev = "gpu-codecs" }
 # xarray = { git = "https://github.com/pydata/xarray", rev = "fix-cupy"}
 xarray = { git = "https://github.com/dcherian/xarray", rev = "fix-cupy" }
 

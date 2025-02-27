@@ -5,7 +5,7 @@ requires-python = ">=3.12"
 [manifest]
 overrides = [
     { name = "nvidia-nvcomp-cu12", specifier = "==4.2.0.14" },
-    { name = "zarr", git = "https://github.com/TomAugspurger/zarr-python?rev=gpu-codecs" },
+    { name = "zarr", git = "https://github.com/akshaysubr/zarr-python?rev=gpu-codecs" },
 ]
 
 [[package]]
@@ -218,7 +218,7 @@ requires-dist = [
     { name = "nvtx", specifier = ">=0.2.11" },
     { name = "rich", specifier = ">=13.9.4" },
     { name = "xarray", git = "https://github.com/dcherian/xarray?rev=fix-cupy" },
-    { name = "zarr", git = "https://github.com/TomAugspurger/zarr-python?rev=gpu-codecs" },
+    { name = "zarr", git = "https://github.com/akshaysubr/zarr-python?rev=gpu-codecs" },
 ]
 
 [package.metadata.requires-dev]
@@ -654,8 +654,8 @@ dependencies = [
 
 [[package]]
 name = "zarr"
-version = "3.0.4.dev3+gd548adcb"
-source = { git = "https://github.com/TomAugspurger/zarr-python?rev=gpu-codecs#d548adcbf2c7049bf926fe97c7c4ac10dc40b6f6" }
+version = "3.0.4.dev4+ga8c0db34"
+source = { git = "https://github.com/akshaysubr/zarr-python?rev=gpu-codecs#a8c0db34ef488d654bac92ee5805bbffd2d7d8dc" }
 dependencies = [
     { name = "donfig" },
     { name = "numcodecs", extra = ["crc32c"] },
