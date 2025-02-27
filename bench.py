@@ -41,7 +41,7 @@ async def write(compress: bool, use_kvikio: bool):
     assert data.shape == SHAPE
 
     data = cp.random.uniform(size=SHAPE)
-    with zarr.config.enable_gpu():
+    with zarr.config.enable_gpu(), zarr.config.set({"codec_pipeline.batch_size": 64}):
         a = await zarr.api.asynchronous.create_array(store, name="a", shape=SHAPE, chunks=CHUNKS, dtype="f8", **kwargs)
         nvtx.mark(message="Benchmark start")
         await a.setitem(slice(None), data)
@@ -72,7 +72,7 @@ async def read(compress: bool, use_kvikio: bool):
     else:
         store = zarr.storage.LocalStore(ROOT)
 
-    with zarr.config.enable_gpu():
+    with zarr.config.enable_gpu(), zarr.config.set({"codec_pipeline.batch_size": 32}):
         g = await zarr.api.asynchronous.open_group(store=store)
         a = await g.get("a")
         if compress:

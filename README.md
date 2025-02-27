@@ -50,6 +50,13 @@ Task=read Store=local  Compression=none Throughput=2744.23 MB/s
 ## Profiles
 
 ```
-nsys profile -t nvtx,cuda --stats=true --force-overwrite=true --output=write-compressed-kvikio ./bench.py write --compress --kvikio
-nsys profile -t nvtx,cuda --stats=true --force-overwrite=true --output=read-compressed-kvikio ./bench.py read --compress --kvikio
+nsys profile -t nvtx,cuda --python-sampling=true --force-overwrite=true --output=write-compressed-kvikio ./bench.py write --compress --kvikio
+nsys profile -t nvtx,cuda --python-sampling=true --force-overwrite=true --output=read-compressed-kvikio ./bench.py read --compress --kvikio
+```
+
+```python
+>>> import cupy as cp
+>>> from nvidia import nvcomp
+>>> codec = nvcomp.Codec(algorithm="Zstd")
+>>> data = cp.random.randint(0, 256, size=(4096, 4096))
 ```

@@ -4,13 +4,17 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = ["kvikio-cu12>=25.2.0", "nvtx>=0.2.11", "zarr"]
+dependencies = ["kvikio-cu12>=25.2.0", "nvtx>=0.2.11", "zarr", "ipython", "xarray"]
 
 [tool.uv.sources]
-zarr = { git = "https://github.com/akshaysubr/zarr-python", rev = "gpu-codecs" }
+# zarr = { git = "https://github.com/akshaysubr/zarr-python", rev = "gpu-codecs" }  # need to push tags here
+# xarray = { git = "https://github.com/pydata/xarray", rev = "fix-cupy"}
+xarray = { git = "https://github.com/TomAugspurger/xarray", rev = "force-cpu-fix-cupy" }
 
 [tool.uv]
 override-dependencies = [
-    "zarr @ git+https://github.com/akshaysubr/zarr-python@gpu-codecs",
-    "nvidia-nvcomp-cu12==4.2.0.14"
+    # "zarr @ git+https://github.com/akshaysubr/zarr-python@gpu-codecs",
+    "zarr==3.0.4",
+    "nvidia-nvcomp-cu12==4.2.0.14",
+    # "xarray @ ../xarray",
 ]
