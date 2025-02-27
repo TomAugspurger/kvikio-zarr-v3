@@ -163,27 +163,27 @@ if __name__ == "__main__":
                     r_duration, r_stdev = asyncio.run(read(compress, use_kvikio))
 
                 records.append(
-                    ("write", sname, cname, w_duration, NBYTES / w_duration / 1e6)
+                    ("write", cname, sname, w_duration, NBYTES / w_duration / 1e6)
                 )
 
                 records.append(
-                    ("read", sname, cname, r_duration, NBYTES / r_duration / 1e6)
+                    ("read", cname, sname, r_duration, NBYTES / r_duration / 1e6)
                 )
 
             records = sorted(records, key=lambda x: x[:3])
             t = rich.table.Table(
                 "Task",
-                "Store",
                 "Compression",
+                "Store",
                 "Duration",
                 "Effective Throughput (MB/s)",
             )
             for record in records:
-                task, sname, cname, duration, throughput = record
+                task, cname, sname, duration, throughput = record
                 t.add_row(
                     task,
-                    sname,
                     cname,
+                    sname,
                     task,
                     f"{duration:0.2f}",
                     rich.align.Align(f"{throughput:0.2f}", "right"),
