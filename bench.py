@@ -2,8 +2,10 @@
 import argparse
 import asyncio
 import contextlib
+import functools
 import math
 import pathlib
+import statistics
 import tempfile
 import time
 
@@ -19,14 +21,34 @@ import zarr.storage
 from kvikio_zarr_v3 import GDSStore
 
 ROOT = pathlib.Path(tempfile.gettempdir()) / "data.zarr"
-SHAPE = (10, 32, 640, 1280)
-# SHAPE = (1, 32, 640, 1280)  # ...
+SHAPE = (10, 32, 640, 1280)  # ...
 CHUNKS = (1, 32, 640, 1280)  # ...
 KERNEL = (1, 32, 16, 32)
-DTYPE = "f4"
+DTYPE = "i4"
 NBYTES = 8 * math.prod(SHAPE)
 
 
+def benchmark(func=None, *, n_runs: int = 3) -> tuple[float, float]:
+    if func is None:
+        return functools.partial(benchmark, n_runs=n_runs)
+
+    @functools.wraps(func)
+    async def wrapper(*args, **kwargs):
+        times = []
+        for _ in range(n_runs):
+            t0 = time.perf_counter()
+            await func(*args, **kwargs)
+            t1 = time.perf_counter()
+            times.append(t1 - t0)
+        if len(times) == 1:
+            return times[0], 0.0
+        else:
+            return statistics.median(times), statistics.stdev(times)
+
+    return wrapper
+
+
+@benchmark
 async def write(compress: bool, use_kvikio: bool):
     if use_kvikio:
         store = GDSStore(ROOT)
@@ -42,7 +64,7 @@ async def write(compress: bool, use_kvikio: bool):
 
     # TODO: various strategies for generating data, some of which are
     # hopefully friendlier to zstd compression.
-    base = cp.random.randint(0, 256, size=KERNEL)
+    base = cp.random.randint(0, 256, size=KERNEL, dtype=DTYPE)
     n_reps = tuple(
         (c // k) * (s // c) for s, c, k in zip(SHAPE, CHUNKS, KERNEL, strict=False)
     )
@@ -58,6 +80,7 @@ async def write(compress: bool, use_kvikio: bool):
         await a.setitem(slice(None), data)
 
 
+@benchmark
 async def read(compress: bool, use_kvikio: bool):
     if use_kvikio:
         store = GDSStore(ROOT)
@@ -88,6 +111,11 @@ if __name__ == "__main__":
         help="Whether to compress the data",
     )
     parser.add_argument("--n-threads", type=int, default=0)
+    parser.add_argument(
+        "--profiling",
+        action=argparse.BooleanOptionalAction,
+        help="Whether you're profiling.",
+    )
     args = parser.parse_args(None)
 
     if args.n_threads > 0:
@@ -99,11 +127,13 @@ if __name__ == "__main__":
         case "read" | "write":
             f = write if args.action == "write" else read
             with num_threads:
-                t0 = time.perf_counter()
-                asyncio.run(f(args.compress, args.kvikio))
-                t1 = time.perf_counter()
+                if args.profiling:
+                    duration, stdev = asyncio.run(
+                        benchmark(f.__wrapped__, n_runs=1)(args.compress, args.kvikio)
+                    )
+                else:
+                    duration, stdev = asyncio.run(f(args.compress, args.kvikio))
 
-            duration = t1 - t0
             throughput = NBYTES / duration / 1e6
             store = "kvikio" if args.kvikio else "local "
             compression = "zstd" if args.compress else "none"
@@ -125,29 +155,27 @@ if __name__ == "__main__":
                 sname = "kvikio" if use_kvikio else "local"
 
                 with num_threads:
-                    t0 = time.perf_counter()
-                    asyncio.run(write(compress, use_kvikio))
-                    t1 = time.perf_counter()
-                    asyncio.run(read(compress, use_kvikio))
-                    t2 = time.perf_counter()
+                    w_duration, w_stdev = asyncio.run(write(compress, use_kvikio))
+                    r_duration, r_stdev = asyncio.run(read(compress, use_kvikio))
 
                 records.append(
-                    (cname, sname, "write", round(t1 - t0, 2), NBYTES / (t1 - t0) / 1e6)
+                    ("write", sname, cname, w_duration, NBYTES / w_duration / 1e6)
                 )
 
                 records.append(
-                    (cname, sname, "read", round(t2 - t1, 2), NBYTES / (t2 - t1) / 1e6)
+                    ("read", sname, cname, r_duration, NBYTES / r_duration / 1e6)
                 )
 
+            records = sorted(records, key=lambda x: x[:3])
             t = rich.table.Table(
-                "Compression",
-                "Store",
                 "Task",
+                "Store",
+                "Compression",
                 "Duration",
                 "Effective Throughput (MB/s)",
             )
             for record in records:
-                cname, sname, task, duration, throughput = record
+                task, cname, sname, duration, throughput = record
                 t.add_row(
                     cname,
                     sname,

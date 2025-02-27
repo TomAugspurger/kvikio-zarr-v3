@@ -18,40 +18,27 @@ uv run bench.py write
 ## Results
 
 ```
-# with compression
-KVIKIO_NTHREADS=64 ./bench.py write --compress --kvikio
-KVIKIO_NTHREADS=64 ./bench.py write --compress --no-kvikio
-KVIKIO_NTHREADS=64 ./bench.py read --compress --kvikio
-KVIKIO_NTHREADS=64 ./bench.py read --compress --no-kvikio
-
-# no compression
-KVIKIO_NTHREADS=64 ./bench.py write --no-compress --kvikio
-KVIKIO_NTHREADS=64 ./bench.py write --no-compress --no-kvikio
-KVIKIO_NTHREADS=64 ./bench.py read --no-compress --kvikio
-KVIKIO_NTHREADS=64 ./bench.py read --no-compress --no-kvikio
+./bench.py all
 ```
 
-results (on a DGX of some sort):
-
-```
-# with compression
-Task=write Store=kvikio Compression=zstd Throughput=82.67 MB/s
-Task=write Store=local  Compression=zstd Throughput=85.99 MB/s
-Task=read Store=kvikio Compression=zstd Throughput=169.32 MB/s
-Task=read Store=local  Compression=zstd Throughput=182.90 MB/s
-
-# no compression
-Task=write Store=kvikio Compression=none Throughput=104.56 MB/s
-Task=write Store=local  Compression=none Throughput=130.94 MB/s
-Task=read Store=kvikio Compression=none Throughput=1318.49 MB/s
-Task=read Store=local  Compression=none Throughput=2744.23 MB/s
-```
+┏━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Task   ┃ Store ┃ Compression ┃ Duration ┃ Effective Throughput (MB/s) ┃
+┡━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ kvikio │ none  │ read        │ 0.75     │                     2809.74 │
+│ kvikio │ zstd  │ read        │ 2.10     │                      999.20 │
+│ local  │ none  │ read        │ 0.45     │                     4695.28 │
+│ local  │ zstd  │ read        │ 1.69     │                     1240.97 │
+│ kvikio │ none  │ write       │ 11.53    │                      181.92 │
+│ kvikio │ zstd  │ write       │ 14.68    │                      142.88 │
+│ local  │ none  │ write       │ 13.47    │                      155.70 │
+│ local  │ zstd  │ write       │ 15.54    │                      134.96 │
+└────────┴───────┴─────────────┴──────────┴─────────────────────────────┘
 
 ## Profiles
 
 ```
-nsys profile -t nvtx,cuda --python-sampling=true --force-overwrite=true --output=write-compressed-kvikio ./bench.py write --compress --kvikio
-nsys profile -t nvtx,cuda --python-sampling=true --force-overwrite=true --output=read-compressed-kvikio ./bench.py read --compress --kvikio
+nsys profile -t nvtx,cuda --python-sampling=true --force-overwrite=true --output=write-compressed-kvikio ./bench.py write --compress --kvikio --profiling
+nsys profile -t nvtx,cuda --python-sampling=true --force-overwrite=true --output=read-compressed-kvikio ./bench.py read --compress --kvikio --profiling
 ```
 
 ```python
